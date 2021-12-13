@@ -13,6 +13,10 @@ cleanup() {
    rm -rf "$TEST_PATH" || true
 }
 
+git-monorepo() {
+   "${GIT_MONOREPO_PATH}/git-monorepo" "$@"
+}
+
 fail() {
    echoerr "test failed: $*"
    exit 1
@@ -39,7 +43,7 @@ setup_monorepo() {
 
 setup_microrepos() {
    cd "${GITHUB}/mono"
-   for i in 1 2; do git monorepo extract proj${i} "$GITHUB"/proj${i}; done
+   for i in 1 2; do git-monorepo extract proj${i} "$GITHUB"/proj${i}; done
 }
 
 clone_proj1() {
@@ -64,7 +68,7 @@ push_proj1() {
 
 update_mono() {
    cd "$GITHUB"/mono
-   git monorepo pull newfeature
+   git-monorepo pull newfeature
 }
 
 merge_mono() {
@@ -73,7 +77,7 @@ merge_mono() {
 }
 
 update_proj1() {
-   git monorepo push
+   git-monorepo push
 }
 
 pull_proj1() {
