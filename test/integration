@@ -87,32 +87,21 @@ pull_proj1() {
    git pull
 }
 
-check_proj1() {
-   cd "$LOCAL"/proj1
+check_repo() {
+   local -r path="$1"
+   local -r file="$2"
+
+   cd "$path"
 
    local x
    x="$(git rev-parse --abbrev-ref HEAD)"
-   [ "$x" == "master" ] || fail proj1 "wrong branch" "$x"
+   [ "$x" == "master" ] || fail "$path" "wrong branch" "$x"
 
    x="$(git log)"
-   echo "$x" | grep -q 'proj1/newfeature' || fail proj1 "commit not found" "$x"
+   echo "$x" | grep -q 'proj1/newfeature' || fail "$path" "commit not found" "$x"
 
-   x="$(cat ./file1.js)"
-   echo "$x" | grep -q 'newchange' || fail proj1 "newchange not found" "$x"
-}
-
-check_mono() {
-   cd "$GITHUB"/mono
-
-   local x
-   x="$(git rev-parse --abbrev-ref HEAD)"
-   [ "$x" == "master" ] || fail mono "wrong branch" "$x"
-
-   x="$(git log)"
-   echo "$x" | grep -q 'proj1/newfeature' || fail mono "commit not found" "$x"
-
-   x="$(cat ./proj1/file1.js)"
-   echo "$x" | grep -q 'newchange' || fail mono "newchange not found" "$x"
+   x="$(cat "$file")"
+   echo "$x" | grep -q 'newchange' || fail "$path" "newchange not found" "$x"
 }
 
 main() {
@@ -127,8 +116,9 @@ main() {
    update_proj1
    pull_proj1
 
-   check_proj1
-   check_mono
+   check_repo "$GITHUB"/mono ./proj1/file1.js
+   check_repo "$GITHUB"/proj1 ./file1.js
+   check_repo "$LOCAL"/proj1 ./file1.js
 }
 
 trap cleanup INT TERM EXIT
