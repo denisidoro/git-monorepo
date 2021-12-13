@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+GIT_MONOREPO_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+source "${GIT_MONOREPO_PATH}/src/utils.sh"
+
+TEST_PATH="${GIT_MONOREPO_PATH}/tmp"
+GITHUB="${TEST_PATH}/github"
+LOCAL="${TEST_PATH}/local"
+
+cleanup() {
+   rm -rf "$TEST_PATH" || true
+}
+
+fail() {
+   echoerr "test failed: $*"
+   exit 1
+}
+
+setup_monorepo() {
+   mkdir -p "${GITHUB}/mono" || true
+   cd "${GITHUB}/mono"
+   git init
+   mkdir proj{1,2}
+   for i in 1 2; do echo "console.log('proj${i}')" > proj${i}/file${i}.js; done
+   git add .
+   git commit -am 'First commit'
+}
+
+setup_microrepos() {
+   cd "${GITHUB}/mono"
+   for i in 1 2; do git monorepo extract proj${i} "$GITHUB"/proj${i}; done
+}
+
+clone_proj1() {
+   mkdir -p "$LOCAL"
+   cd "$LOCAL"
+   git clone -b master "$GITHUB"/proj1
+}
+
+change_proj1() {
+   cd "$LOCAL"/proj1
+   git checkout master
+   git pull origin master
+   git checkout -b newfeature
+   echo "console.log('newchange')" >> file1.js
+   git add .
+   git commit -am "proj1/newfeature: change file1.js"
+}
+
+push_proj1() {
+   git push origin newfeature
+}
+
+update_mono() {
+   cd "$GITHUB"/mono
+   git monorepo pull newfeature
+}
+
+merge_mono() {
+   git checkout master
+   git merge newfeature
+}
+
+update_proj1() {
+   git monorepo push
+}
+
+pull_proj1() {
+   cd "$LOCAL"/proj1
+   git checkout master
+   git pull
+}
+
+check_proj1() {
+   cd "$LOCAL"/proj1
+
+   local x
+   x="$(git rev-parse --abbrev-ref HEAD)"
+   [ "$x" == "master" ] || fail proj1 "wrong branch" "$x"
+
+   x="$(git log)"
+   echo "$x" | grep -q 'proj1/newfeature' || fail proj1 "commit not found" "$x"
+
+   x="$(cat ./file1.js)"
+   echo "$x" | grep -q 'newchange' || fail proj1 "newchange not found" "$x"
+}
+
+check_mono() {
+   cd "$GITHUB"/mono
+
+   local x
+   x="$(git rev-parse --abbrev-ref HEAD)"
+   [ "$x" == "master" ] || fail mono "wrong branch" "$x"
+
+   x="$(git log)"
+   echo "$x" | grep -q 'proj1/newfeature' || fail mono "commit not found" "$x"
+
+   x="$(cat ./proj1/file1.js)"
+   echo "$x" | grep -q 'newchange' || fail mono "newchange not found" "$x"
+}
+
+main() {
+   setup_monorepo
+   setup_microrepos
+   clone_proj1
+   change_proj1
+   push_proj1
+   update_mono
+   merge_mono
+   update_proj1
+   pull_proj1
+
+   check_proj1
+   check_mono
+}
+
+trap cleanup INT TERM EXIT
+cleanup
+main "$@"

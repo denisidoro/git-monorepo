@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+   DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+   SOURCE="$(readlink "$SOURCE")"
+   [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+GIT_MONOREPO_PATH="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+
+source "${GIT_MONOREPO_PATH}/src/utils.sh"
+
+cleanup() {
+   rm -rf "$TMP_DIR" || true
+}
+
+main() {
+   local -r fn="${1:-}"
+   shift || true
+   case $fn in
+      extract) call_cmd extract "$@" ;;
+      pull) call_cmd pull "$@" ;;
+      push) call_cmd push "$@" ;;
+      *) echoerr "invalid arguments"; exit 42 ;;
+   esac
+}
+
+trap cleanup INT TERM EXIT
+cleanup
+main "$@"
