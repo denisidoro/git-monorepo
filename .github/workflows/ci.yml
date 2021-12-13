@@ -16,5 +16,8 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v2
 
+      - name: Install git-filter-repo
+        run: pip3 install git-filter-repo
+
       - name: Run tests
         run: make -B test
