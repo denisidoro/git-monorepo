@@ -18,6 +18,15 @@ fail() {
    exit 1
 }
 
+setup_git_if_necessary() {
+   local -r email="$(git config --get user.email)"
+   if [ -n "$email" ]; then
+      return 0 
+   fi
+   git config --global user.email "bot@github.com"
+   git config --global user.name "GitHub bot"
+}
+
 setup_monorepo() {
    mkdir -p "${GITHUB}/mono" || true
    cd "${GITHUB}/mono"
@@ -102,6 +111,7 @@ check_mono() {
 }
 
 main() {
+   setup_git_if_necessary
    setup_monorepo
    setup_microrepos
    clone_proj1
