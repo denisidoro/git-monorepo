@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+set -x
 
 GIT_MONOREPO_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
